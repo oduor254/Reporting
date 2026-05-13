@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Report Dashboard</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --bg2: #ffffff;
+      --bg3: #f1f5f9;
+      --border: #e2e8f0;
+      --border2: #cbd5e1;
+      --text: #1e293b;
+      --text2: #475569;
+      --text3: #64748b;
+      --accent: #3b82f6;
+      --accent2: #2563eb;
+      --up: #10b981;
+      --up-dim: rgba(16, 185, 129, .12);
+      --dn: #ef4444;
+      --dn-dim: rgba(239, 68, 68, .12);
+      --flat: #6b7280;
+      --flat-dim: rgba(107, 114, 128, .1);
+      --gold: #f59e0b;
+      --gold-dim: rgba(245, 158, 11, .12);
+      --purple: #8b5cf6;
+      --purple-dim: rgba(139, 92, 246, .12);
+      --pink: #ec4899;
+      --pink-dim: rgba(236, 72, 153, .12);
+      --cyan: #06b6d4;
+      --cyan-dim: rgba(6, 182, 212, .12);
+      --orange: #f97316;
+      --orange-dim: rgba(249, 115, 22, .12);
+      --r: 8px;
+      --mono: 'Geist Mono', monospace;
+      --sans: 'Geist', sans-serif;
+      --serif: 'Instrument Serif', serif;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    body {
+      font-family: var(--sans);
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+
+    /* Filter Controls */
+    .filter-controls {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .filter-controls select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg2);
+    }
+
+    .filter-controls button {
+      padding: 8px 16px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .filter-controls button:hover {
+      background: var(--accent2);
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text2);
+    }
+
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Error */
+    .error {
+      background: var(--dn-dim);
+      color: var(--dn);
+      padding: 20px;
+      border-radius: var(--r);
+      margin: 20px;
+      border: 1px solid var(--dn);
+    }
+
+    /* Dashboard */
+    .dashboard {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-family: var(--serif);
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--text2);
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .metric-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px;
+    }
+
+    .metric-card h3 {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 8px;
+    }
+
+    .metric-card .value {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .metric-card .change {
+      font-size: 14px;
+    }
+
+    .metric-card .change.up {
+      color: var(--up);
+    }
+
+    .metric-card .change.down {
+      color: var(--dn);
+    }
+
+    .metric-card .change.flat {
+      color: var(--flat);
+    }
+
+    /* Sections */
+    .section {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .section h2 {
+      font-family: var(--serif);
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--text2);
+    }
+
+    tr:hover {
+      background: var(--bg3);
+    }
+
+    /* Lists */
+    .metric-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .metric-item:last-child {
+      border-bottom: none;
+    }
+
+    .risk-low {
+      color: var(--up);
+    }
+
+    .risk-medium {
+      color: var(--gold);
+    }
+
+    .risk-high {
+      color: var(--dn);
+    }
+
+    .quality-excellent {
+      color: var(--up);
+    }
+
+    .quality-good {
+      color: var(--cyan);
+    }
+
+    .quality-fair {
+      color: var(--gold);
+    }
+
+    .quality-poor {
+      color: var(--dn);
+    }
+
+    /* Feedback styles */
+    .rating-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .bar-container {
+      flex: 1;
+      height: 20px;
+      background: var(--bg3);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--up));
+      border-radius: 10px;
+      transition: width 0.3s ease;
+    }
+
+    .feedback-item {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+
+    .feedback-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .rating {
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .feedback-type {
+      color: var(--text2);
+      font-size: 0.9em;
+      margin-bottom: 4px;
+    }
+
+    .feedback-comment {
+      color: var(--text);
+      font-size: 0.85em;
+      line-height: 1.4;
+    }
+
+    /* Feedback table styles */
+    .feedback-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .feedback-table th,
+    .feedback-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .feedback-table th {
+      background: var(--bg3);
+      font-weight: 600;
+      color: var(--text2);
+    }
+
+    /* Metrics table styles */
+    .metrics-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .metrics-table th,
+    .metrics-table td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .metrics-table th {
+      background: var(--bg3);
+      font-weight: 600;
+      color: var(--text2);
+    }
+
+    .product-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .product-table th,
+    .product-table td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .product-table th {
+      background: var(--bg3);
+      font-weight: 600;
+      color: var(--text2);
+    }
+
+    .quality-score {
+      font-size: 2em;
+      font-weight: bold;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .quality-status {
+      text-align: center;
+      font-size: 1.2em;
+      font-weight: 600;
+    }
+
+    .feedback-table tr:hover {
+      background: var(--bg3);
+    }
+
+    .analysis-cell {
+      max-width: 300px;
+      font-size: 0.9em;
+      line-height: 1.4;
+    }
+
+    /* Change indicators */
+    .change-positive {
+      color: var(--up);
+      font-weight: 600;
+    }
+
+    .change-negative {
+      color: var(--dn);
+      font-weight: 600;
+    }
+
+    .change-neutral {
+      color: var(--text3);
+      font-weight: 600;
+    }
+
+    /* Full width metric card */
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
+    /* Total row styling */
+    .total-row {
+      background: var(--bg3);
+      font-weight: 600;
+      border-top: 2px solid var(--border);
+    }
+
+    .total-row td {
+      padding: 14px 12px;
+    }
+
+    /* Summary metrics section */
+    .summary-metrics {
+      background: var(--bg2);
+      padding: 16px;
+      border-radius: var(--r);
+      border: 1px solid var(--border);
+    }
+
+    .summary-metrics h4 {
+      margin-bottom: 12px;
+      color: var(--text2);
+      font-weight: 600;
+    }
+
+    /* Gender Performance Table Styles */
+    .gender-performance-table .shop-header {
+      background: var(--bg3);
+      font-weight: 600;
+      border-top: 2px solid var(--border);
+    }
+
+    .gender-performance-table .shop-header td {
+      padding: 14px 12px;
+      text-align: center;
+      background: var(--bg3);
+    }
+
+    .gender-performance-table .gender-row {
+      background: var(--bg2);
+    }
+
+    .gender-performance-table .shop-totals {
+      background: var(--bg3);
+      font-weight: 600;
+      border-top: 1px solid var(--border);
+    }
+
+    .gender-performance-table .shop-totals td {
+      background: var(--bg3);
+    }
+
+    .gender-performance-table .overall-totals {
+      background: var(--up);
+      color: white;
+      font-weight: 600;
+      border-top: 2px solid var(--border);
+    }
+
+    .gender-performance-table .overall-totals td {
+      background: var(--up);
+      color: white;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="dashboard">
+    <div class="header">
+      <h1>Report Dashboard</h1>
+      <p id="subtitle"></p>
+      <div class="header-actions">
+        <button onclick="refreshData()" class="btn">🔄 Refresh Data</button>
+        <button onclick="syncData()" class="btn">🔄 Sync New Data</button>
+      </div>
+    </div>
+
+    <div class="filter-controls">
+      <select id="shopFilter">
+        <option value="All Shops">All Shops</option>
+      </select>
+      <select id="periodFilter">
+        <option value="Overall">Overall</option>
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+      </select>
+      <input type="date" id="dateFilter" style="display: none;">
+      <select id="weekFilter" style="display: none;">
+        <option value="">Select Week</option>
+        <option value="1">Week 1</option>
+        <option value="2">Week 2</option>
+        <option value="3">Week 3</option>
+        <option value="4">Week 4</option>
+        <option value="5">Week 5</option>
+      </select>
+      <select id="monthFilter" style="display: none;">
+        <option value="">Select Month</option>
+      </select>
+      <select id="yearFilter" style="display: none;">
+        <option value="">Select Year</option>
+      </select>
+      <button onclick="refreshData()">Refresh</button>
+    </div>
+
+    <div id="loading" class="loading">Loading data...</div>
+    <div id="error" class="error" style="display: none;"></div>
+
+    <div id="content" style="display: none;">
+      <!-- Executive Summary -->
+      <div id="summarySection" class="section"
+        style="display: none; background: #f0f7ff; border-left: 4px solid var(--accent);">
+        <h2 style="color: var(--accent2);">Executive Summary & Insights</h2>
+        <div id="summaryList" style="list-style-type: none; padding: 0;">
+          <!-- Insights will be populated here -->
+        </div>
+      </div>
+
+      <!-- Customer Metrics -->
+      <div class="section">
+        <h2>Customer Metrics</h2>
+        <div class="metrics-grid" id="customerMetrics">
+          <table class="metrics-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th class="current-period-label">Current</th>
+                <th class="previous-period-label">Previous</th>
+                <th>Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Total Customers</td>
+                <td id="totalCustomers-current">-</td>
+                <td id="totalCustomers-previous">-</td>
+                <td id="totalCustomers-change">-</td>
+              </tr>
+              <tr>
+                <td>Single Buyers</td>
+                <td id="newCustomers-current">-</td>
+                <td id="newCustomers-previous">-</td>
+                <td id="newCustomers-change">-</td>
+              </tr>
+              <tr>
+                <td>Multi Buyers</td>
+                <td id="repeatCustomers-current">-</td>
+                <td id="repeatCustomers-previous">-</td>
+                <td id="repeatCustomers-change">-</td>
+              </tr>
+              <tr>
+                <td>Avg Orders/Customer</td>
+                <td id="avgOrders-current">-</td>
+                <td id="avgOrders-previous">-</td>
+                <td id="avgOrders-change">-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Store Performance -->
+      <div class="section">
+        <h2>Store Performance</h2>
+        <div id="storePerformance">
+          <table class="metrics-table">
+            <thead>
+              <tr>
+                <th>Shop</th>
+                <th class="current-period-label">Current</th>
+                <th class="previous-period-label">Previous</th>
+                <th>Change</th>
+                <th>Change %</th>
+              </tr>
+            </thead>
+            <tbody id="storePerformanceRows">
+              <!-- Store rows will be populated here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Products & Categories -->
+      <div class="section">
+        <h2>Products & Categories</h2>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <h3>Top Products</h3>
+            <table class="product-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Count</th>
+                  <th>%</th>
+                </tr>
+              </thead>
+              <tbody id="topProductsRows">
+                <!-- Product rows will be populated here -->
+              </tbody>
+            </table>
+          </div>
+          <div class="metric-card">
+            <h3>Top Categories</h3>
+            <table class="product-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Count</th>
+                  <th>%</th>
+                </tr>
+              </thead>
+              <tbody id="topCategoriesRows">
+                <!-- Category rows will be populated here -->
+              </tbody>
+            </table>
+          </div>
+          <div class="metric-card">
+            <h3>Top Colors</h3>
+            <table class="product-table">
+              <thead>
+                <tr>
+                  <th>Color</th>
+                  <th>Count</th>
+                  <th>%</th>
+                </tr>
+              </thead>
+              <tbody id="topColorsRows">
+                <!-- Color rows will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Revenue Analysis -->
+      <div class="section">
+        <h2>Revenue Analysis</h2>
+        <div class="metrics-grid" id="revenueMetrics">
+          <table class="metrics-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th class="current-period-label">Current</th>
+                <th class="previous-period-label">Previous</th>
+                <th>Change</th>
+                <th>Avg/Transaction</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Total Revenue</td>
+                <td id="revenue-current">-</td>
+                <td id="revenue-previous">-</td>
+                <td id="revenue-change">-</td>
+                <td id="revenue-avg">-</td>
+              </tr>
+              <tr>
+                <td>Avg Customer Spend</td>
+                <td id="revCust-current">-</td>
+                <td id="revCust-previous">-</td>
+                <td id="revCust-change">-</td>
+                <td id="revCust-spacer" style="background: var(--bg3);"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customer Retention -->
+      <div class="section">
+        <h2>Customer Retention</h2>
+        <div class="metrics-grid" id="repeatMetrics">
+          <table class="metrics-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th class="current-period-label">Current</th>
+                <th class="previous-period-label">Previous</th>
+                <th>Change</th>
+                <th>%</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Single Buyers</td>
+                <td id="newCustomers-count">-</td>
+                <td id="newCustomers-prev">-</td>
+                <td id="newCustomers-count-change">-</td>
+                <td id="newCustomers-pct">-</td>
+              </tr>
+              <tr>
+                <td>Multi-Buyers</td>
+                <td id="repeatCustomers-count">-</td>
+                <td id="repeatCustomers-prev">-</td>
+                <td id="repeatCustomers-count-change">-</td>
+                <td id="repeatCustomers-pct">-</td>
+              </tr>
+              <tr>
+                <td>Total Customers</td>
+                <td id="totalCustomers-count">-</td>
+                <td id="totalCustomers-prev">-</td>
+                <td id="totalCustomers-count-change">-</td>
+                <td id="totalCustomers-count-pct">100%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- KYC & Data Quality -->
+      <div class="section">
+        <h2>KYC & Data Quality</h2>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <h3>Phone Verification Summary</h3>
+            <table class="metrics-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th class="current-period-label">Current</th>
+                  <th class="previous-period-label">Previous</th>
+                  <th>Change</th>
+                  <th>%</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Total Records</td>
+                  <td id="kyc-total">-</td>
+                  <td id="kyc-total-prev">-</td>
+                  <td id="kyc-total-change">-</td>
+                  <td>100%</td>
+                </tr>
+                <tr>
+                  <td>Valid Phones</td>
+                  <td id="kyc-valid">-</td>
+                  <td id="kyc-valid-prev">-</td>
+                  <td id="kyc-valid-change">-</td>
+                  <td id="kyc-valid-pct">-</td>
+                </tr>
+                <tr>
+                  <td>Invalid/N/A Phones</td>
+                  <td id="kyc-invalid">-</td>
+                  <td id="kyc-invalid-prev">-</td>
+                  <td id="kyc-invalid-change">-</td>
+                  <td id="kyc-invalid-pct">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="metric-card">
+            <h3>Data Quality Score</h3>
+            <div class="quality-score" id="kyc-quality-score">-</div>
+            <div class="quality-status" id="kyc-quality-status">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Feedback -->
+      <div class="section">
+        <h2>Customer Feedback</h2>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <h3>Feedback Summary</h3>
+            <div id="feedbackSummary"></div>
+          </div>
+          <div class="metric-card">
+            <h3>Change Analysis</h3>
+            <div id="changeAnalysis"></div>
+          </div>
+        </div>
+        <div class="metrics-grid" style="margin-top: 20px;">
+          <div class="metric-card full-width">
+            <h3>Comparison Analysis</h3>
+            <div id="dailyComparison"></div>
+          </div>
+        </div>
+        <div class="metrics-grid" style="margin-top: 20px;">
+          <div class="metric-card full-width">
+            <h3>Weekly Comparison</h3>
+            <div id="weeklyComparison"></div>
+          </div>
+        </div>
+        <div id="weeklyTargetSection" class="metrics-grid" style="margin-top: 20px; display: none;">
+          <div class="metric-card full-width" style="padding: 0; border: 2px solid #00ff00;">
+            <div
+              style="background: #00ff00; color: #000; text-align: center; padding: 10px; font-size: 24px; font-weight: 900; text-transform: none;">
+              Feedback Targets</div>
+            <div id="participationTargets" style="padding: 15px;"></div>
+          </div>
+        </div>
+        <div id="weeklyMetricTargetSection" class="metrics-grid" style="margin-top: 20px; display: none;">
+          <div class="metric-card full-width">
+            <h3 id="targetAnalysisTitle">Weekly Target Analysis</h3>
+            <div id="weeklyTargets"></div>
+          </div>
+        </div>
+        <div id="monthlyComparisonSection" class="metrics-grid" style="margin-top: 20px; display: none;">
+          <div class="metric-card full-width">
+            <h3>Monthly Trend Analysis</h3>
+            <div id="monthlyComparison"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Purchase Behavior Analysis -->
+      <div class="section">
+        <h2>Purchase Behavior Analysis</h2>
+        <div class="metrics-grid">
+          <div class="metric-card full-width">
+            <h3>Purchase Frequency Distribution</h3>
+            <table class="metrics-table">
+              <thead>
+                <tr>
+                  <th>Purchase Frequency</th>
+                  <th>Customer Count</th>
+                  <th>Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1 Purchase</td>
+                  <td id="purchase-1-count">-</td>
+                  <td id="purchase-1-pct">-</td>
+                </tr>
+                <tr>
+                  <td>2 Purchases</td>
+                  <td id="purchase-2-count">-</td>
+                  <td id="purchase-2-pct">-</td>
+                </tr>
+                <tr>
+                  <td>3-5 Purchases</td>
+                  <td id="purchase-3-5-count">-</td>
+                  <td id="purchase-3-5-pct">-</td>
+                </tr>
+                <tr>
+                  <td>6+ Purchases</td>
+                  <td id="purchase-6-plus-count">-</td>
+                  <td id="purchase-6-plus-pct">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gender Performance Analysis -->
+      <div class="section">
+        <h2>Gender Performance Analysis</h2>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <h3>Gender Overview</h3>
+            <table class="metrics-table">
+              <thead>
+                <tr>
+                  <th>Gender</th>
+                  <th>Count</th>
+                  <th>Percentage</th>
+                </tr>
+              </thead>
+              <tbody id="genderOverviewRows">
+                <!-- Gender overview rows will be populated here -->
+              </tbody>
+            </table>
+          </div>
+          <div class="metric-card">
+            <h3>Revenue by Gender</h3>
+            <table class="metrics-table">
+              <thead>
+                <tr>
+                  <th>Gender</th>
+                  <th>Revenue</th>
+                  <th>Avg/Transaction</th>
+                </tr>
+              </thead>
+              <tbody id="genderRevenueRows">
+                <!-- Gender revenue rows will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="metrics-grid" style="margin-top: 20px;">
+          <div class="metric-card full-width">
+            <h3>GENDER PERFORMANCE TABLE</h3>
+            <table class="metrics-table">
+              <thead>
+                <tr>
+                  <th>Shop</th>
+                  <th>Female</th>
+                  <th>%</th>
+                  <th>Male</th>
+                  <th>%</th>
+                  <th>Organization</th>
+                  <th>%</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody id="genderPerformanceRows">
+                <!-- Gender performance rows will be populated here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <!-- Report Notes -->
+      <div class="section"
+        style="background: var(--bg3); border: 1px dashed var(--border2); font-size: 0.9em; color: var(--text2); margin-top: 40px;">
+        <h3>Report Methodology & Notes:</h3>
+        <ul style="margin-left: 20px; margin-top: 10px; line-height: 1.6;">
+          <li><strong>Currency:</strong> All monetary values are presented in Kenyan Shillings (KES).</li>
+          <li><strong>Comparisons:</strong> "Previous" refers to the period immediately preceding the selected
+            timeframe. For Week 1 of a month, the system automatically benchmarks against the last active week of the
+            prior month.</li>
+          <li><strong>Unique Customers:</strong> Calculations are based on unique phone identifiers to provide accurate
+            retention and repeat-buy metrics.</li>
+          <li><strong>Data Source:</strong> Real-time synchronization with primary sales worksheets.</li>
+          <li style="margin-top: 10px; color: var(--text3);"><em>Generated by: <span id="analystName">Brayan
+                Oduor</span> | <span id="generationTime">-</span></em></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentData = null;
+    let feedbackData = null;
+
+    async function loadData() {
+      try {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('error').style.display = 'none';
+        document.getElementById('content').style.display = 'none';
+
+        // Load main reporting data
+        const shop = document.getElementById('shopFilter').value;
+        const period = document.getElementById('periodFilter').value;
+        let periodValue = period;
+
+        // Handle different period types
+        if (period === 'daily') {
+          const date = document.getElementById('dateFilter').value;
+          if (!date) {
+            document.getElementById('error').textContent = 'Please select a date for daily report';
+            document.getElementById('error').style.display = 'block';
+            return;
+          }
+          periodValue = date;
+        } else if (period === 'weekly') {
+          const week = document.getElementById('weekFilter').value;
+          const month = document.getElementById('monthFilter').value;
+          const year = document.getElementById('yearFilter').value;
+
+          if (!week || !month || !year) {
+            document.getElementById('error').textContent = 'Please select week, month, and year for weekly report';
+            document.getElementById('error').style.display = 'block';
+            return;
+          }
+          periodValue = `Week ${week} of ${month} ${year}`;
+        } else if (period === 'monthly') {
+          const month = document.getElementById('monthFilter').value;
+          const year = document.getElementById('yearFilter').value;
+
+          if (!month || !year) {
+            document.getElementById('error').textContent = 'Please select month and year for monthly report';
+            document.getElementById('error').style.display = 'block';
+            return;
+          }
+          periodValue = `${month} ${year}`;
+        }
+
+        // Fetch both main data and feedback data
+        const [reportingResponse, feedbackResponse] = await Promise.all([
+          fetch(`/api/reporting-data?shop=${encodeURIComponent(shop)}&period=${encodeURIComponent(periodValue)}`),
+          fetch(`/api/feedback-data?period=${encodeURIComponent(periodValue)}`)
+        ]);
+
+        if (!reportingResponse.ok) {
+          throw new Error('Failed to fetch reporting data');
+        }
+        if (!feedbackResponse.ok) {
+          throw new Error('Failed to fetch feedback data');
+        }
+
+        currentData = await reportingResponse.json();
+        feedbackData = await feedbackResponse.json();
+
+        // Update metadata and toggle visibility
+        if (currentData && currentData.date_range) {
+          const subtitle = document.getElementById('subtitle');
+          if (subtitle) {
+            const displayPeriod = currentData.display_period || currentData.period;
+            subtitle.textContent = `${displayPeriod} - ${currentData.date_range.start_date} to ${currentData.date_range.end_date}`;
+          }
+
+          document.getElementById('analystName').textContent = currentData.analyst || 'Brayan Oduor';
+          document.getElementById('generationTime').textContent = currentData.generated_at || '-';
+        }
+
+        // Show content
+        document.getElementById('content').style.display = 'block';
+
+        // Update filters if they are empty
+        updateFilters();
+        updateComparisonHeaders();
+
+        // Update all sections
+        if (currentData.metrics) updateCustomerMetrics();
+        if (currentData.summary) updateSummary();
+        if (currentData.stores) updateStorePerformance();
+        if (currentData.products) updateProducts();
+        if (currentData.revenue) updateRevenue();
+        if (currentData.repeat) updateRepeatAnalysis();
+        if (currentData.kyc) updateKYCMetrics();
+        if (feedbackData) updateFeedbackMetrics();
+        if (currentData.purchase_behavior) updatePurchaseBehavior();
+        if (currentData.gender_performance) updateGenderPerformance();
+
+      } catch (error) {
+        console.error('Error loading data:', error);
+        document.getElementById('error').textContent = 'Failed to load data: ' + error.message;
+        document.getElementById('error').style.display = 'block';
+      } finally {
+        document.getElementById('loading').style.display = 'none';
+      }
+    }
+
+    function updateFilters() {
+      if (!currentData || !currentData.filters) return;
+
+      // Update shop filter
+      const shopSelect = document.getElementById('shopFilter');
+      const prevShop = shopSelect.value;
+      shopSelect.innerHTML = '<option value="All Shops">All Shops</option>';
+      currentData.filters.shops.forEach(shop => {
+        shopSelect.innerHTML += `<option value="${shop}">${shop}</option>`;
+      });
+      if (prevShop && Array.from(shopSelect.options).some(o => o.value === prevShop)) {
+        shopSelect.value = prevShop;
+      }
+
+      // Update month and year filters
+      const monthSelect = document.getElementById('monthFilter');
+      const yearSelect = document.getElementById('yearFilter');
+
+      const prevMonth = monthSelect.value;
+      const prevYear = yearSelect.value;
+
+      // Populate months (if empty or just the placeholder)
+      if (monthSelect.options.length <= 1) {
+        const months = ['January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'];
+        monthSelect.innerHTML = '<option value="">Select Month</option>';
+        months.forEach(month => {
+          monthSelect.innerHTML += `<option value="${month}">${month}</option>`;
+        });
+      }
+      if (prevMonth) monthSelect.value = prevMonth;
+
+      // Populate years from data
+      if (currentData.filters && currentData.filters.periods && currentData.filters.periods.Yearly) {
+        const years = [...new Set(currentData.filters.periods.Yearly)];
+        if (years.length > 0) {
+          const currentYears = Array.from(yearSelect.options).map(o => o.value);
+          const yearsMatch = years.length === (currentYears.length - 1) && years.every(y => currentYears.includes(y));
+
+          if (!yearsMatch) {
+            yearSelect.innerHTML = '<option value="">Select Year</option>';
+            years.forEach(year => {
+              yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
+            });
+          }
+          if (prevYear) yearSelect.value = prevYear;
+        }
+      }
+    }
+
+    function handlePeriodChange() {
+      const period = document.getElementById('periodFilter').value;
+
+      // Hide all specific filters first
+      document.getElementById('dateFilter').style.display = 'none';
+      document.getElementById('weekFilter').style.display = 'none';
+      document.getElementById('monthFilter').style.display = 'none';
+      document.getElementById('yearFilter').style.display = 'none';
+
+      // Show relevant filters based on period
+      if (period === 'daily') {
+        document.getElementById('dateFilter').style.display = 'inline-block';
+        // Set today's date as default
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('dateFilter').value = today;
+      } else if (period === 'weekly') {
+        document.getElementById('weekFilter').style.display = 'inline-block';
+        document.getElementById('monthFilter').style.display = 'inline-block';
+        document.getElementById('yearFilter').style.display = 'inline-block';
+      }
+      // For 'Overall', keep all hidden
+    }
+
+    function updateSummary() {
+      const summary = currentData.summary || [];
+      const container = document.getElementById('summarySection');
+      const list = document.getElementById('summaryList');
+
+      if (summary.length > 0) {
+        container.style.display = 'block';
+        list.innerHTML = summary.map(insight => `
+          <div class="metric-item" style="border-bottom: 1px solid rgba(0,0,0,0.05); padding: 12px 0;">
+            <span style="font-size: 1.05em; line-height: 1.5; color: var(--text);">${insight}</span>
+          </div>
+        `).join('');
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
+    function updateCustomerMetrics() {
+      const m = currentData.metrics;
+
+      // Update Customer Metrics table
+      document.getElementById('totalCustomers-current').textContent = m.total_customers?.value || 0;
+      document.getElementById('totalCustomers-previous').textContent = m.total_customers?.value - (m.total_customers?.change || 0) || 0;
+      document.getElementById('totalCustomers-change').textContent = m.total_customers?.change ?
+        (m.total_customers.change > 0 ? '+' : '') + m.total_customers.change : '-';
+
+      document.getElementById('newCustomers-current').textContent = m.new_customers?.value || 0;
+      document.getElementById('newCustomers-previous').textContent = m.new_customers?.value - (m.new_customers?.change || 0) || 0;
+      document.getElementById('newCustomers-change').textContent = m.new_customers?.change ?
+        (m.new_customers.change > 0 ? '+' : '') + m.new_customers.change : '-';
+
+      document.getElementById('repeatCustomers-current').textContent = m.repeat_customers?.value || 0;
+      document.getElementById('repeatCustomers-previous').textContent = m.repeat_customers?.value - (m.repeat_customers?.change || 0) || 0;
+      document.getElementById('repeatCustomers-change').textContent = m.repeat_customers?.change ?
+        (m.repeat_customers.change > 0 ? '+' : '') + m.repeat_customers.change : '-';
+
+      document.getElementById('avgOrders-current').textContent = m.avg_orders_per_customer?.value || 0;
+      document.getElementById('avgOrders-previous').textContent = m.avg_orders_per_customer?.value - (m.avg_orders_per_customer?.change || 0) || 0;
+      document.getElementById('avgOrders-change').textContent = m.avg_orders_per_customer?.change ?
+        (m.avg_orders_per_customer.change > 0 ? '+' : '') + m.avg_orders_per_customer.change : '-';
+    }
+
+    function updateStorePerformance() {
+      const stores = currentData.stores || [];
+      const tbody = document.getElementById('storePerformanceRows');
+
+      let totalCurrent = 0;
+      let totalPrev = 0;
+      let totalChange = 0;
+
+      const rows = stores.map(s => {
+        // Use unique customer metrics from backend
+        const current = s.display_count || 0;
+        const previous = s.display_prev || 0;
+        const change = s.change || 0;
+        const changePct = previous > 0 ? ((change / previous) * 100).toFixed(1) : (previous === 0 && current > 0 ? '100.0' : '0.0');
+
+        totalCurrent += current;
+        totalPrev += previous;
+        totalChange += change;
+
+        return `
+          <tr>
+            <td>${s.shop || s.Shop || 'Unknown'}</td>
+            <td>${current.toLocaleString()}</td>
+            <td>${previous.toLocaleString()}</td>
+            <td class="${change > 0 ? 'change-positive' : change < 0 ? 'change-negative' : 'change-neutral'}">
+              ${change > 0 ? '+' : ''}${change}
+            </td>
+            <td class="${change > 0 ? 'change-positive' : change < 0 ? 'change-negative' : 'change-neutral'}">
+              ${change > 0 ? '+' : ''}${changePct}%
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Add Total Row
+      // Use global unique customers to match Customer Metrics exactly and avoid double-counting cross-shop visits
+      const m = currentData.metrics?.total_customers || {};
+      totalCurrent = m.value !== undefined ? m.value : totalCurrent;
+      totalChange = m.change !== undefined ? m.change : totalChange;
+      totalPrev = totalCurrent - totalChange;
+
+      const totalChangePct = totalPrev > 0 ? ((totalChange / totalPrev) * 100).toFixed(1) : (totalPrev === 0 && totalCurrent > 0 ? '100.0' : '0.0');
+      const totalRow = `
+        <tr class="total-row" style="background-color: #f8f9fa; font-weight: bold; border-top: 2px solid #dee2e6;" title="Shows true unique customers globally. Summing columns may be higher due to cross-shop visits.">
+          <td>Total <span style="font-weight: normal; font-size: 0.9em; color: var(--text3);">(Unique)</span></td>
+          <td>${totalCurrent.toLocaleString()}</td>
+          <td>${totalPrev.toLocaleString()}</td>
+          <td class="${totalChange > 0 ? 'change-positive' : totalChange < 0 ? 'change-negative' : 'change-neutral'}">
+            ${totalChange > 0 ? '+' : ''}${totalChange}
+          </td>
+          <td class="${totalChange > 0 ? 'change-positive' : totalChange < 0 ? 'change-negative' : 'change-neutral'}">
+            ${totalChange > 0 ? '+' : ''}${totalChangePct}%
+          </td>
+        </tr>
+      `;
+
+      tbody.innerHTML = rows + totalRow;
+    }
+
+    function updateProducts() {
+      const products = currentData.products || {};
+
+      // Update Products table
+      const productsData = products.products || [];
+      const productsTotal = productsData.reduce((s, p) => s + (p.count || 0), 0);
+      const productsRows = productsData.slice(0, 8).map(p => {
+        const pct = productsTotal > 0 ? ((p.count / productsTotal) * 100).toFixed(1) : 0;
+        return `
+          <tr>
+            <td>${p.product || 'Unknown'}</td>
+            <td>${(p.count || 0).toLocaleString()}</td>
+            <td>${pct}%</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('topProductsRows').innerHTML = productsRows || '<tr><td colspan="3">No product data</td></tr>';
+
+      // Update Categories table
+      const categoriesData = products.categories || [];
+      const categoriesTotal = categoriesData.reduce((s, c) => s + (c.count || 0), 0);
+      const categoriesRows = categoriesData.slice(0, 8).map(c => {
+        const pct = categoriesTotal > 0 ? ((c.count / categoriesTotal) * 100).toFixed(1) : 0;
+        return `
+          <tr>
+            <td>${c.category || 'Unknown'}</td>
+            <td>${(c.count || 0).toLocaleString()}</td>
+            <td>${pct}%</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('topCategoriesRows').innerHTML = categoriesRows || '<tr><td colspan="3">No category data</td></tr>';
+
+      // Update Colors table
+      const colorsData = products.colors || [];
+      const colorsTotal = colorsData.reduce((s, c) => s + (c.count || 0), 0);
+      const colorsRows = colorsData.slice(0, 8).map(c => {
+        const pct = colorsTotal > 0 ? ((c.count / colorsTotal) * 100).toFixed(1) : 0;
+        return `
+          <tr>
+            <td>${c.color || 'Unknown'}</td>
+            <td>${(c.count || 0).toLocaleString()}</td>
+            <td>${pct}%</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('topColorsRows').innerHTML = colorsRows || '<tr><td colspan="3">No color data</td></tr>';
+    }
+
+    function updateRevenue() {
+      if (!currentData || !currentData.revenue) return;
+      const r = currentData.revenue.revenue || { value: 0, change: 0, change_pct: 0, avg_per_transaction: 0 };
+
+      document.getElementById('revenue-current').textContent = `KES ${r.value.toLocaleString()}`;
+      document.getElementById('revenue-previous').textContent = `KES ${(r.value - r.change).toLocaleString()}`; // Changed from 'revenue-prev' to 'revenue-previous'
+
+      const changeEl = document.getElementById('revenue-change');
+      changeEl.textContent = `KES ${r.change.toLocaleString()} (${r.change_pct >= 0 ? '+' : ''}${r.change_pct}%)`;
+      changeEl.className = r.change > 0 ? 'change-positive' : r.change < 0 ? 'change-negative' : 'change-neutral';
+
+      document.getElementById('revenue-avg').textContent = `KES ${r.avg_per_transaction.toLocaleString()}`;
+
+      // Average per Customer
+      document.getElementById('revCust-current').textContent = `KES ${(r.avg_per_customer || 0).toLocaleString()}`;
+      document.getElementById('revCust-previous').textContent = `KES ${(r.avg_per_customer_prev || 0).toLocaleString()}`;
+
+      const custChgEl = document.getElementById('revCust-change');
+      const cc = r.avg_per_customer_change || 0;
+      custChgEl.textContent = `KES ${cc.toLocaleString()}`;
+      custChgEl.className = cc > 0 ? 'change-positive' : cc < 0 ? 'change-negative' : 'change-neutral';
+    }
+
+    function updateComparisonHeaders() {
+      const currentLabel = currentData?.current_label || currentData?.period || 'Current';
+      const previousLabel = currentData?.comparison_label || 'Previous';
+      document.querySelectorAll('th.current-period-label').forEach(el => el.textContent = currentLabel);
+      document.querySelectorAll('th.previous-period-label').forEach(el => el.textContent = previousLabel);
+    }
+
+    function updateRepeatAnalysis() {
+      const repeat = currentData.repeat || {};
+      const new_c = repeat.new_customers || {};
+      const rep_c = repeat.repeat_customers || {};
+      const total = (new_c.value || 0) + (rep_c.value || 0);
+      const prev_total = (new_c.prev || 0) + (rep_c.prev || 0);
+
+      // Update Customer Retention table
+      document.getElementById('newCustomers-count').textContent = (new_c.value || 0).toLocaleString();
+      document.getElementById('newCustomers-prev').textContent = (new_c.prev || 0).toLocaleString();
+      document.getElementById('newCustomers-count-change').textContent = (new_c.change >= 0 ? '+' : '') + (new_c.change || 0);
+      document.getElementById('newCustomers-count-change').className = new_c.change > 0 ? 'change-positive' : new_c.change < 0 ? 'change-negative' : 'change-neutral';
+      document.getElementById('newCustomers-pct').textContent = `${repeat.new_pct || 0}%`;
+
+      document.getElementById('repeatCustomers-count').textContent = (rep_c.value || 0).toLocaleString();
+      document.getElementById('repeatCustomers-prev').textContent = (rep_c.prev || 0).toLocaleString();
+      document.getElementById('repeatCustomers-count-change').textContent = (rep_c.change >= 0 ? '+' : '') + (rep_c.change || 0);
+      document.getElementById('repeatCustomers-count-change').className = rep_c.change > 0 ? 'change-positive' : rep_c.change < 0 ? 'change-negative' : 'change-neutral';
+      document.getElementById('repeatCustomers-pct').textContent = `${repeat.repeat_pct || 0}%`;
+
+      document.getElementById('totalCustomers-count').textContent = total.toLocaleString();
+      document.getElementById('totalCustomers-prev').textContent = prev_total.toLocaleString();
+      document.getElementById('totalCustomers-count-change').textContent = (total - prev_total >= 0 ? '+' : '') + (total - prev_total);
+    }
+
+    function updateKYCMetrics() {
+      const kyc = currentData.kyc || {};
+      const with_p = kyc.with_phone || {};
+      const miss_p = kyc.missing_phone || {};
+      const inv_p = kyc.invalid_phone || {};
+
+      const total = (with_p.value || 0) + (miss_p.value || 0) + (inv_p.value || 0);
+      const prev_total = (with_p.prev || 0) + (miss_p.prev || 0) + (inv_p.prev || 0);
+      const validPct = kyc.with_phone_pct || 0;
+      const qualityLabel = validPct >= 90 ? 'Excellent' : validPct >= 75 ? 'Good' : validPct >= 50 ? 'Fair' : 'Poor';
+
+      // Update KYC table
+      document.getElementById('kyc-total').textContent = total.toLocaleString();
+      document.getElementById('kyc-total-prev').textContent = prev_total.toLocaleString();
+      document.getElementById('kyc-total-change').textContent = (total - prev_total >= 0 ? '+' : '') + (total - prev_total);
+
+      document.getElementById('kyc-valid').textContent = (with_p.value || 0).toLocaleString();
+      document.getElementById('kyc-valid-prev').textContent = (with_p.prev || 0).toLocaleString();
+      document.getElementById('kyc-valid-change').textContent = (with_p.change >= 0 ? '+' : '') + (with_p.change || 0);
+      document.getElementById('kyc-valid-change').className = with_p.change > 0 ? 'change-positive' : with_p.change < 0 ? 'change-negative' : 'change-neutral';
+      document.getElementById('kyc-valid-pct').textContent = `${validPct}%`;
+
+      const invalid_total = (inv_p.value || 0) + (miss_p.value || 0);
+      const prev_invalid_total = (inv_p.prev || 0) + (miss_p.prev || 0);
+      document.getElementById('kyc-invalid').textContent = invalid_total.toLocaleString();
+      document.getElementById('kyc-invalid-prev').textContent = prev_invalid_total.toLocaleString();
+      document.getElementById('kyc-invalid-change').textContent = (invalid_total - prev_invalid_total >= 0 ? '+' : '') + (invalid_total - prev_invalid_total);
+      document.getElementById('kyc-invalid-change').className = (invalid_total - prev_invalid_total) < 0 ? 'change-positive' : (invalid_total - prev_invalid_total) > 0 ? 'change-negative' : 'change-neutral';
+      document.getElementById('kyc-invalid-pct').textContent = `${(100 - validPct).toFixed(1)}%`;
+
+      // Update Data Quality Score
+      document.getElementById('kyc-quality-score').textContent = `${validPct}%`;
+      document.getElementById('kyc-quality-status').textContent = qualityLabel;
+      document.getElementById('kyc-quality-status').className = `quality-status ${qualityLabel.toLowerCase()}`;
+    }
+
+    function updateFeedbackMetrics() {
+      if (!feedbackData || !feedbackData.analysis) return;
+
+      const feedback = feedbackData.analysis;
+      const summary = feedback.metrics_summary || {};
+
+      // 1. Show/Hide sections based on data type
+      const dailySect = document.getElementById('dailyComparison')?.parentElement?.parentElement;
+      const weeklySect = document.getElementById('weeklyComparison')?.parentElement?.parentElement;
+      const monthlySect = document.getElementById('monthlyComparisonSection');
+
+      if (dailySect) dailySect.style.display = (feedback.data_type === 'daily' || feedback.data_type === 'weekly') ? 'block' : 'none';
+      if (weeklySect) weeklySect.style.display = feedback.data_type === 'weekly' ? 'block' : 'none';
+      if (monthlySect) monthlySect.style.display = feedback.data_type === 'monthly' ? 'block' : 'none';
+
+      const weeklyTargetSect = document.getElementById('weeklyTargetSection');
+      const weeklyMetricSect = document.getElementById('weeklyMetricTargetSection');
+      if (weeklyTargetSect) weeklyTargetSect.style.display = (feedback.data_type === 'weekly' && feedback.participation_targets?.length > 0) ? 'block' : 'none';
+      if (weeklyMetricSect) weeklyMetricSect.style.display = feedback.data_type === 'weekly' ? 'block' : 'none';
+
+      // 2. Summary counts
+      const summaryContainer = document.getElementById('feedbackSummary');
+      if (summaryContainer) {
+        summaryContainer.innerHTML = `
+          <div class="metric-item"><span>Total Metrics:</span><strong>${summary.total_metrics || 0}</strong></div>
+          <div class="metric-item"><span>Positive Changes:</span><strong class="change-positive">${summary.positive_changes || 0}</strong></div>
+          <div class="metric-item"><span>Negative Changes:</span><strong class="change-negative">${summary.negative_changes || 0}</strong></div>
+          <div class="metric-item"><span>No/Neutral Changes:</span><strong>${summary.no_changes || 0}</strong></div>
+        `;
+      }
+
+      const changeContainer = document.getElementById('changeAnalysis');
+      if (changeContainer) {
+        const net = (summary.positive_changes || 0) - (summary.negative_changes || 0);
+        changeContainer.innerHTML = `
+          <div class="metric-item"><span>Net Improvement:</span><strong class="${net >= 0 ? 'change-positive' : 'change-negative'}">${net}</strong></div>
+          <div class="metric-item"><span>Numeric Density:</span><strong>${summary.numeric_metrics || 0} metrics</strong></div>
+        `;
+      }
+
+      // 3. Render specific tables
+      if (feedback.data_type === 'daily' || feedback.data_type === 'weekly') {
+        renderDailyComparison(feedback.daily_comparison);
+      }
+      if (feedback.data_type === 'weekly') {
+        renderWeeklyTrend(feedback.weekly_comparison);
+        renderParticipationTargets(feedback.participation_targets);
+      }
+      if (feedback.data_type === 'monthly') {
+        renderMonthlyTrend(feedback.monthly_comparison, summary.month_columns || []);
+      }
+    }
+
+    function renderDailyComparison(comp) {
+      const container = document.getElementById('dailyComparison');
+      if (!container || !comp || Object.keys(comp).length === 0) return;
+
+      const rows = Object.entries(comp).map(([metric, data]) => `
+        <tr>
+          <td><strong>${metric}</strong></td>
+          <td>${data.date1_value}</td>
+          <td>${data.date2_value}</td>
+          <td class="${data.change > 0 ? 'change-positive' : data.change < 0 ? 'change-negative' : 'change-neutral'}">
+            ${data.change_str || '-'}
+          </td>
+          <td>${data.analysis}</td>
+        </tr>
+      `).join('');
+
+      container.innerHTML = `
+        <table class="feedback-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>${Object.values(comp)[0]?.date1_name || 'Previous'}</th>
+              <th>${Object.values(comp)[0]?.date2_name || 'Current'}</th>
+              <th>Change</th>
+              <th>Analysis</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function renderWeeklyTrend(comp) {
+      const mainContainer = document.getElementById('weeklyComparison');
+      const targetContainer = document.getElementById('weeklyTargets');
+      if (!mainContainer || !comp) return;
+
+      const mainRows = Object.entries(comp).map(([metric, data]) => {
+        const weeks = data.weekly_data || {};
+        const weekCells = [1, 2, 3, 4, 5].map(v => `<td>${weeks[`Week ${v}`] || '-'}</td>`).join('');
+        return `
+          <tr>
+            <td><strong>${metric}</strong></td>
+            ${weekCells}
+            <td class="${parseFloat(data.change) > 0 ? 'change-positive' : parseFloat(data.change) < 0 ? 'change-negative' : 'change-neutral'}">
+              <strong>${data.change || '-'}</strong>
+            </td>
+            <td><strong>${data.status || '-'}</strong></td>
+          </tr>
+        `;
+      }).join('');
+
+      mainContainer.innerHTML = `
+        <table class="feedback-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Week 1</th><th>Week 2</th><th>Week 3</th><th>Week 4</th><th>Week 5</th>
+              <th>Change</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>${mainRows}</tbody>
+        </table>
+      `;
+
+      if (targetContainer) {
+        document.getElementById('targetAnalysisTitle').textContent = "Weekly Metric Targets (Benchmark: 100%)";
+        const targetRows = Object.entries(comp).map(([metric, data]) => `
+          <tr>
+            <td><strong>${metric}</strong></td>
+            <td>${data.target || '100%'}</td>
+            <td style="font-weight: 500;">${data.comment || 'Performance within expected range'}</td>
+          </tr>
+        `).join('');
+
+        targetContainer.innerHTML = `
+          <table class="feedback-table">
+            <thead>
+              <tr>
+                <th style="width: 30%;">Metric</th>
+                <th style="width: 20%;">Target / Benchmark</th>
+                <th style="width: 50%;">Performance Comments</th>
+              </tr>
+            </thead>
+            <tbody>${targetRows}</tbody>
+          </table>
+        `;
+      }
+    }
+
+    function renderParticipationTargets(targets) {
+      const container = document.getElementById('participationTargets');
+      if (!container || !targets || targets.length === 0) return;
+
+      const headers = Object.keys(targets[0]);
+      const headerHtml = headers.map(h => `<th>${h}</th>`).join('');
+
+      const rows = targets.map(t => {
+        const isTotal = String(t.SHOP || '').toLowerCase() === 'totals';
+        const pctStr = String(t['Links %'] || t['%'] || '0').replace('%', '');
+        const pctVal = parseFloat(pctStr);
+
+        // Pink highlight for high achievers found in the image (>78%)
+        const pctStyle = (!isTotal && pctVal >= 78) ? 'color: #ff00ff; font-weight: bold;' : '';
+
+        return `
+          <tr style="${isTotal ? 'background: #d4edda; font-weight: bold;' : ''}">
+            ${headers.map(h => {
+          const val = t[h] || '-';
+          let style = (h === '%' || h === 'Links %') ? pctStyle : '';
+          if (h === 'SHOP' && !isTotal) style += ' font-weight: bold;';
+          return `<td style="${style}">${val}</td>`;
+        }).join('')}
+          </tr>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <table class="feedback-table">
+          <thead style="background: #aadaab; color: #000; font-style: italic;">
+            <tr>${headerHtml}</tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function renderMonthlyTrend(comp, months) {
+      const container = document.getElementById('monthlyComparison');
+      if (!container || !comp) return;
+
+      const sortedMonths = months; // Keep original order from sheet headers
+      const headerHtml = sortedMonths.map(m => `<th>${m}</th>`).join('');
+
+      const rows = Object.entries(comp).map(([metric, data]) => {
+        const mData = data.month_data || {};
+        const mCells = sortedMonths.map(m => `<td>${mData[m] || '-'}</td>`).join('');
+        const changeVal = parseFloat(data.change);
+        return `
+          <tr>
+            <td><strong>${metric}</strong></td>
+            ${mCells}
+            <td class="${changeVal > 0 ? 'change-positive' : changeVal < 0 ? 'change-negative' : 'change-neutral'}">
+              <strong>${data.change || '-'}</strong>
+            </td>
+            <td><strong>${data.analysis || '-'}</strong></td>
+          </tr>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <table class="feedback-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              ${headerHtml}
+              <th>Change</th>
+              <th>Analysis</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function updatePurchaseBehavior() {
+      if (!currentData || !currentData.purchase_behavior) return;
+      const b = currentData.purchase_behavior;
+      const total = (b['1_purchase'] || 0) + (b['2_purchases'] || 0) + (b['3_5_purchases'] || 0) + (b['6_plus_purchases'] || 0);
+
+      // Update Purchase Behavior table
+      document.getElementById('purchase-1-count').textContent = (b['1_purchase'] || 0).toLocaleString();
+      document.getElementById('purchase-1-pct').textContent = total > 0 ? `${((b['1_purchase'] || 0) / total * 100).toFixed(1)}% ` : '0%';
+
+      document.getElementById('purchase-2-count').textContent = (b['2_purchases'] || 0).toLocaleString();
+      document.getElementById('purchase-2-pct').textContent = total > 0 ? `${((b['2_purchases'] || 0) / total * 100).toFixed(1)}% ` : '0%';
+
+      document.getElementById('purchase-3-5-count').textContent = (b['3_5_purchases'] || 0).toLocaleString();
+      document.getElementById('purchase-3-5-pct').textContent = total > 0 ? `${((b['3_5_purchases'] || 0) / total * 100).toFixed(1)}% ` : '0%';
+
+      document.getElementById('purchase-6-plus-count').textContent = (b['6_plus_purchases'] || 0).toLocaleString();
+      document.getElementById('purchase-6-plus-pct').textContent = total > 0 ? `${((b['6_plus_purchases'] || 0) / total * 100).toFixed(1)}% ` : '0%';
+    }
+
+    function updateGenderPerformance() {
+      if (!currentData) return;
+      const rows = currentData.gender_performance || [];
+      const segments = currentData.segments || [];
+
+      const genderOverviewRows = rows.map(r => `
+        <tr>
+          <td>${r.gender || 'Unknown'}</td>
+          <td>${(r.count || 0).toLocaleString()}</td>
+          <td>${r.percentage || '0'}%</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('genderOverviewRows').innerHTML = genderOverviewRows || '<tr><td colspan="3">No gender data</td></tr>';
+
+      // Update Gender Revenue table (placeholder for now)
+      const genderRevenueEl = document.getElementById('genderRevenueRows');
+      if (genderRevenueEl) genderRevenueEl.innerHTML = '<tr><td colspan="3">Revenue breakdown by gender not available</td></tr>';
+
+      // Update Gender Performance Table
+      const byShop = {};
+      segments.forEach(r => {
+        const shop = r.Shop || r.shop || 'Unknown';
+        const gender = (r.Gender || r.gender || 'Unknown').toLowerCase();
+        if (!byShop[shop]) byShop[shop] = { female: 0, male: 0, organization: 0 };
+        if (gender === 'female') byShop[shop].female += r.count || 0;
+        else if (gender === 'male') byShop[shop].male += r.count || 0;
+        else byShop[shop].organization += r.count || 0;
+      });
+
+      const shopRows = Object.entries(byShop).map(([shopName, sd]) => {
+        const total = sd.female + sd.male + sd.organization;
+        const fPct = total > 0 ? (sd.female / total * 100).toFixed(1) : '0.0';
+        const mPct = total > 0 ? (sd.male / total * 100).toFixed(1) : '0.0';
+        const oPct = total > 0 ? (sd.organization / total * 100).toFixed(1) : '0.0';
+
+        return `
+          <tr>
+            <td><strong>${shopName}</strong></td>
+            <td>${sd.female.toLocaleString()}</td>
+            <td>${fPct}%</td>
+            <td>${sd.male.toLocaleString()}</td>
+            <td>${mPct}%</td>
+            <td>${sd.organization.toLocaleString()}</td>
+            <td>${oPct}%</td>
+            <td><strong>${total.toLocaleString()}</strong></td>
+          </tr>
+        `;
+      }).join('');
+
+      // Add Total Row (Use summary rows from the backend for the overall total)
+      let tFemale = 0;
+      let tMale = 0;
+      let tOrg = 0;
+
+      rows.forEach(r => {
+        const g = (r.gender || '').toLowerCase();
+        if (g === 'female') tFemale = r.count || 0;
+        else if (g === 'male') tMale = r.count || 0;
+        else if (g === 'organization') tOrg = r.count || 0;
+      });
+
+      const grandTotal = tFemale + tMale + tOrg;
+
+      const totalRow = `
+        <tr class="total-row" style="background-color: #f8f9fa; border-top: 2px solid #dee2e6; font-weight: bold;">
+          <td>Total</td>
+          <td>${tFemale.toLocaleString()}</td>
+          <td>${grandTotal > 0 ? (tFemale / grandTotal * 100).toFixed(1) : '0.0'}%</td>
+          <td>${tMale.toLocaleString()}</td>
+          <td>${grandTotal > 0 ? (tMale / grandTotal * 100).toFixed(1) : '0.0'}%</td>
+          <td>${tOrg.toLocaleString()}</td>
+          <td>${grandTotal > 0 ? (tOrg / grandTotal * 100).toFixed(1) : '0.0'}%</td>
+          <td>${grandTotal.toLocaleString()}</td>
+        </tr >
+      `;
+
+      document.getElementById('genderPerformanceRows').innerHTML = (shopRows + totalRow) || '<tr><td colspan="8">No gender performance data</td></tr>';
+    }
+
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', loadData);
+
+    function refreshData() {
+      loadData();
+    }
+
+    function syncData() {
+      // Clear cache and force fresh data fetch
+      fetch('/api/refresh-now', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Data synced successfully:', data);
+          // Reload the page after sync
+          setTimeout(() => {
+            loadData();
+          }, 1000);
+        })
+        .catch(error => {
+          console.error('Error syncing data:', error);
+          alert('Error syncing data. Please try again.');
+        });
+    }
+
+    // Populate months and years immediately
+    (function populateInitialFilters() {
+      // Months
+      const monthSelect = document.getElementById('monthFilter');
+      const months = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+      monthSelect.innerHTML = '<option value="">Select Month</option>';
+      months.forEach(month => {
+        monthSelect.innerHTML += `<option value="${month}">${month}</option>`;
+      });
+
+      // Years (Default to 2025-2026 while waiting for data)
+      const yearSelect = document.getElementById('yearFilter');
+      const defaultYears = ['2025', '2026'];
+      yearSelect.innerHTML = '<option value="">Select Year</option>';
+      defaultYears.forEach(year => {
+        yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
+      });
+    })();
+
+    function handlePeriodChange() {
+      const period = document.getElementById('periodFilter').value;
+
+      // Hide all dynamic filters first
+      document.getElementById('dateFilter').style.display = 'none';
+      document.getElementById('weekFilter').style.display = 'none';
+      document.getElementById('monthFilter').style.display = 'none';
+      document.getElementById('yearFilter').style.display = 'none';
+
+      // Show relevant filters based on period
+      if (period === 'daily') {
+        document.getElementById('dateFilter').style.display = 'inline-block';
+      } else if (period === 'weekly') {
+        document.getElementById('weekFilter').style.display = 'inline-block';
+        document.getElementById('monthFilter').style.display = 'inline-block';
+        document.getElementById('yearFilter').style.display = 'inline-block';
+      } else if (period === 'monthly') {
+        document.getElementById('monthFilter').style.display = 'inline-block';
+        document.getElementById('yearFilter').style.display = 'inline-block';
+      }
+    }
+
+    // Event listeners
+    document.getElementById('shopFilter').addEventListener('change', loadData);
+    document.getElementById('periodFilter').addEventListener('change', function () {
+      handlePeriodChange();
+      const period = this.value;
+      // Only auto-load if period is Overall or Daily (which has a default date)
+      if (period === 'Overall' || period === 'daily') {
+        loadData();
+      }
+    });
+    document.getElementById('dateFilter').addEventListener('change', loadData);
+    document.getElementById('weekFilter').addEventListener('change', loadData);
+    document.getElementById('monthFilter').addEventListener('change', loadData);
+    document.getElementById('yearFilter').addEventListener('change', loadData);
+
+    // Initial load triggered via DOMContentLoaded listener earlier
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,36 @@
+# === Credentials & Secrets ===
+*.json
+.env
+secrets/
+
+# === Python Cache ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# === Virtual Environments ===
+.venv/
+venv/
+env/
+ENV/
+
+# === Data Cache Files ===
+*.pkl
+*.csv
+feedback_data_cache.json
+reporting_data_cache.pkl
+
+# === Backup Files ===
+*.backup
+
+# === IDE & OS Files ===
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# === Logs ===
+*.log
+flask_output.txt

@@ -1,0 +1,10 @@
+flask
+gunicorn
+gspread
+google-auth
+google-auth-oauthlib
+pandas
+numpy
+requests
+urllib3
+certifi

@@ -54,7 +54,9 @@ def _log_request_end(response):
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Configuration
-JSON_FILE_PATH = r'C:\Users\Oduor\Downloads\JSON Files\reporting-488611-05bb9568ffb8.json'
+# On Render: set GOOGLE_CREDENTIALS_PATH env var to the path of your service account JSON
+# On local: falls back to the hardcoded path
+JSON_FILE_PATH = os.environ.get('GOOGLE_CREDENTIALS_PATH', r'C:\Users\Oduor\Downloads\JSON Files\reporting-488611-05bb9568ffb8.json')
 SHEET_NAME = 'Reporting'
 WORKSHEET_NAME = 'Shops'  # Main data sheet
 FEEDBACK_WORKSHEET_NAME = 'Feedback'  # Customer feedback sheet
@@ -383,7 +385,13 @@ def get_feedback_data():
         session.mount("https://", adapter)
         session.mount("http://", adapter)
         
-        gc = gspread.service_account(filename=JSON_FILE_PATH, scopes=SCOPES)
+        creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+        if creds_json:
+            creds_dict = json.loads(creds_json)
+            gc = gspread.service_account_from_dict(creds_dict, scopes=SCOPES)
+        else:
+            gc = gspread.service_account(filename=JSON_FILE_PATH, scopes=SCOPES)
+            
         # Increase timeout if possible (not all gspread versions support this directly on client)
         try:
             gc.http_client.timeout = 30
@@ -610,7 +618,12 @@ def get_reporting_data():
     start_time = time.time()
 
     try:
-        gc = gspread.service_account(filename=JSON_FILE_PATH, scopes=SCOPES)
+        creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+        if creds_json:
+            creds_dict = json.loads(creds_json)
+            gc = gspread.service_account_from_dict(creds_dict, scopes=SCOPES)
+        else:
+            gc = gspread.service_account(filename=JSON_FILE_PATH, scopes=SCOPES)
         spreadsheet = gc.open(SHEET_NAME)
         worksheet = spreadsheet.worksheet(WORKSHEET_NAME)
 
@@ -1540,11 +1553,13 @@ def get_reporting_api_data():
 
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5003))
+    debug_mode = os.environ.get('FLASK_ENV', 'production') != 'production'
     print("\n" + "="*60)
     print("Starting Report Dashboard")
     print("="*60)
-    print(f"[LINK] Open in browser: http://localhost:5003")
+    print(f"[LINK] Open in browser: http://localhost:{port}")
     print(f"[INFO] Report Analysis using February 2026 Shops Data")
     print("="*60 + "\n")
     
-    app.run(debug=True, port=5003, host='0.0.0.0', use_reloader=False)
+    app.run(debug=debug_mode, port=port, host='0.0.0.0', use_reloader=False)
